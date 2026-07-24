@@ -32,7 +32,7 @@
   h1,h2,h3{ font-family:'Fraunces',serif; margin:0; }
   .wrap{ max-width:1100px; margin:0 auto; padding:0 24px; }
 
-  header.site{ padding:56px 0 32px; border-bottom:1px solid var(--line); }
+  header.site{ padding:56px 0 24px; border-bottom:1px solid var(--line); }
   .eyebrow{
     font-family:'IBM Plex Mono',monospace;
     color:var(--gold);
@@ -44,65 +44,67 @@
   header.site h1{ font-size:clamp(32px,5vw,52px); font-weight:600; max-width:16ch; }
   header.site p{ color:var(--muted); max-width:56ch; margin-top:14px; font-size:16px; }
 
+  /* --- year tabs --- */
+  .year-tabs{ display:flex; gap:8px; margin-top:24px; padding-bottom:24px; }
+  .year-tab{
+    background:var(--panel);
+    border:1px solid var(--line);
+    color:var(--muted);
+    padding:9px 18px;
+    border-radius:20px;
+    font-size:13.5px;
+    font-weight:600;
+    cursor:pointer;
+    font-family:'Inter',sans-serif;
+  }
+  .year-tab.active{ background:var(--gold); color:#1a1200; border-color:var(--gold); }
+  .year-tab:not(.active):hover{ border-color:var(--blue); color:var(--text); }
+
   section{ padding:48px 0; border-bottom:1px solid var(--line); }
   section h2{ font-size:26px; font-weight:600; margin-bottom:6px; }
   .section-sub{ color:var(--muted); font-size:14px; margin-bottom:28px; }
-
-  /* --- board --- */
-  .board{
-    display:grid;
-    grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
-    gap:14px;
-    align-items:start;
-  }
-  .flap-card{
-    background:var(--panel);
-    border:1px solid var(--line);
-    border-radius:8px;
-    padding:16px 18px;
-  }
-  .flap-hall{
-    font-size:14px;
-    font-weight:600;
-    margin-bottom:10px;
-    font-family:'Fraunces',serif;
-  }
-  .flap-rt-row{
-    display:flex;
-    justify-content:space-between;
-    align-items:baseline;
-    gap:10px;
-    padding:7px 0;
-    border-top:1px solid var(--line);
-  }
-  .flap-rt-row:first-of-type{ border-top:none; }
-  .flap-rt-label{ font-size:12.5px; color:var(--muted); flex:1; }
-  .flap-rt-count-wrap{ display:flex; align-items:baseline; gap:5px; }
-  .flap-rt-count{
-    font-family:'IBM Plex Mono',monospace;
-    font-weight:600;
-    font-size:17px;
-    transition:opacity .3s ease;
-  }
-  .flap-rt-count.flip{ animation:flip .5s ease; }
-  @keyframes flip{
-    0%{ transform:rotateX(0deg); opacity:1; }
-    45%{ transform:rotateX(90deg); opacity:.2; }
-    55%{ transform:rotateX(90deg); opacity:.2; }
-    100%{ transform:rotateX(0deg); opacity:1; }
-  }
-  .flap-rt-unit{ font-size:10.5px; color:var(--muted); }
-  .flap-rt-meta{ font-size:10px; color:var(--muted); text-align:right; white-space:nowrap; }
-  .status-plenty .flap-rt-count{ color:var(--success); }
-  .status-low .flap-rt-count{ color:var(--gold); }
-  .status-gone .flap-rt-count{ color:var(--danger); }
-  .status-unknown .flap-rt-count{ color:var(--muted); }
 
   /* --- banners --- */
   .banner{ border-radius:6px; padding:12px 16px; font-size:13.5px; margin-bottom:20px; display:none; }
   .banner.show{ display:block; }
   .banner.warn{ background:rgba(228,87,46,.12); border:1px solid var(--danger); color:#ffbfa8; }
   .banner.info{ background:rgba(91,155,213,.12); border:1px solid var(--blue); color:#cfe3f7; }
+
+  /* --- board table --- */
+  .board-table{ width:100%; border-collapse:collapse; background:var(--panel); border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+  .board-table th{
+    text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.05em;
+    color:var(--muted); padding:12px 16px; border-bottom:1px solid var(--line); background:var(--panel-light);
+    font-weight:600;
+  }
+  .board-table td{ padding:14px 16px; border-bottom:1px solid var(--line); vertical-align:top; font-size:13.5px; }
+  .board-table tbody tr:last-child td{ border-bottom:none; }
+  .board-table tbody tr:hover{ background:rgba(255,255,255,.02); }
+  .bt-hall-col{ width:20%; }
+  .bt-total-col{ width:14%; }
+  .bt-meta-col{ width:14%; }
+  .bt-hall{ font-family:'Fraunces',serif; font-weight:600; font-size:15px; }
+  .bt-total{ font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:21px; }
+  .bt-total-basis{ font-size:10px; color:var(--muted); display:block; margin-top:2px; font-family:'Inter',sans-serif; font-weight:400; }
+  .bt-badges{ display:flex; flex-wrap:wrap; gap:6px; }
+  .bt-badge{ background:var(--panel-light); border:1px solid var(--line); border-radius:20px; padding:3px 10px; font-size:11.5px; font-family:'IBM Plex Mono',monospace; white-space:nowrap; color:var(--text); }
+  .bt-meta{ font-size:11px; color:var(--muted); white-space:nowrap; }
+  .status-plenty{ color:var(--success); }
+  .status-low{ color:var(--gold); }
+  .status-gone{ color:var(--danger); }
+  .status-unknown{ color:var(--muted); }
+  .empty-note{ color:var(--muted); font-size:13.5px; padding:16px; }
+
+  @media(max-width:760px){
+    .board-table thead{ display:none; }
+    .board-table, .board-table tbody, .board-table tr, .board-table td{ display:block; width:100%; }
+    .board-table tr{ padding:12px 16px; border-bottom:1px solid var(--line); }
+    .board-table td{ border:none; padding:5px 0; }
+    .board-table td[data-label]::before{
+      content: attr(data-label); display:block; font-size:10px; text-transform:uppercase;
+      color:var(--muted); letter-spacing:.04em; margin-bottom:3px;
+    }
+  }
 
   /* --- form --- */
   form.report-form{
@@ -220,18 +222,32 @@
     <div class="eyebrow">Unofficial &middot; Crowdsourced &middot; Queen's University</div>
     <h1>Know what's left before your slot opens.</h1>
     <p>Residence self-selection hides everyone else's screen from you. This board is built entirely from what people ahead of you report seeing, in real time — so you're not walking in blind.</p>
+    <div class="year-tabs" id="year-tabs">
+      <button type="button" class="year-tab active" data-view="live">2026–27 (Live)</button>
+      <button type="button" class="year-tab" data-view="archive">2025–26 (Archive)</button>
+    </div>
   </header>
 
   <section id="board-section">
-    <h2>Live board</h2>
-    <div class="section-sub">Most recent report per room type, by the time it was actually seen on someone's screen.</div>
+    <h2 id="board-heading">Live board</h2>
+    <div class="section-sub" id="board-subtext">Most recent report per residence, with a total remaining and the breakdown behind it.</div>
     <div id="board-banner" class="banner warn"></div>
-    <div class="board" id="board"></div>
+    <table class="board-table">
+      <thead>
+        <tr>
+          <th class="bt-hall-col">Residence</th>
+          <th class="bt-total-col">Total remaining</th>
+          <th>Breakdown</th>
+          <th class="bt-meta-col">Last seen</th>
+        </tr>
+      </thead>
+      <tbody id="board-tbody"></tbody>
+    </table>
   </section>
 
   <section id="report-section">
     <h2>Report what you see</h2>
-    <div class="section-sub">In your self-selection window right now? Log every room type you checked in one go — takes 30 seconds and helps everyone after you.</div>
+    <div class="section-sub">In your self-selection window right now? Log every residence you checked in one go — takes 30 seconds and helps everyone after you. Short on time or not sure of the exact room type? Pick <strong>"Any (total)"</strong> and just enter the overall number remaining.</div>
 
     <div id="form-banner" class="banner warn"></div>
 
@@ -270,7 +286,7 @@
   </section>
 
   <section id="chart-section">
-    <h2>How fast do they go?</h2>
+    <h2 id="chart-heading">How fast do they go?</h2>
     <div class="section-sub">Beds/rooms remaining over time, based on every report submitted. Steeper drop = faster depletion.</div>
     <div class="chart-controls">
       <label style="margin:0;">Residence:</label>
@@ -286,7 +302,7 @@
   <footer>
     Built by students, not affiliated with Queen's University Residence Services. Data is entirely self-reported and may not be accurate —
     always confirm in the official <a href="https://portal.housing.queensu.ca/" target="_blank" rel="noopener">Housing Portal</a>.
-    A year-over-year archive and trend-prediction view is planned once this season's data is in.
+    The 2025–26 archive is historical, read-only, and kept in a completely separate database from this year's live reports.
   </footer>
 </div>
 
@@ -306,6 +322,7 @@
     const PAGE_LOAD_MS = Date.now();
     const MIN_FILL_TIME_MS = 1200;      // reject submissions faster than this (likely a bot)
     const RESUBMIT_COOLDOWN_MS = 15000; // mirrors the 15s server-side rate limit
+    const ANY_LABEL = "Any (total)";
 
     const HALL_ROOM_TYPES = {
       "Adelaide Hall": ["Single","Double","Triple"],
@@ -326,6 +343,9 @@
       "Waldron Tower": ["Single","Double"],
       "Watts Hall": ["Single Plus"]
     };
+    // Every hall also accepts a catch-all "Any (total)" entry for people who
+    // don't have time to check the specific room-type breakdown.
+    Object.keys(HALL_ROOM_TYPES).forEach(h=> HALL_ROOM_TYPES[h].push(ANY_LABEL));
 
     const MAX_BEDS_BY_HALL = {
       "Adelaide Hall": 113, "Ban Righ Hall": 65, "Brant House": 262, "Chown Hall": 192,
@@ -359,8 +379,12 @@
       if (!hall || !HALL_ROOM_TYPES[hall]){
         return '<option value="" disabled selected>Select a residence first</option>';
       }
+      const specific = HALL_ROOM_TYPES[hall].filter(rt=> rt !== ANY_LABEL);
       let html = '<option value="" disabled selected>Select a room type…</option>';
-      HALL_ROOM_TYPES[hall].forEach(rt=>{ html += `<option value="${rt}">${rt}</option>`; });
+      html += '<optgroup label="Specific room type">';
+      specific.forEach(rt=>{ html += `<option value="${rt}">${rt}</option>`; });
+      html += '</optgroup>';
+      html += `<optgroup label="Not sure / short on time"><option value="${ANY_LABEL}">${ANY_LABEL} — just the overall number</option></optgroup>`;
       return html;
     }
 
@@ -440,7 +464,7 @@
         if (isBlank) return;
 
         if (!hall){ errors.push(`Row ${idx+1}: select a residence.`); return; }
-        if (!roomType){ errors.push(`Row ${idx+1} (${hall}): select a room type.`); return; }
+        if (!roomType){ errors.push(`Row ${idx+1} (${hall}): select a room type (or "Any (total)" if you're not sure).`); return; }
         if (!HALL_ROOM_TYPES[hall] || !HALL_ROOM_TYPES[hall].includes(roomType)){
           errors.push(`Row ${idx+1}: "${roomType}" isn't offered in ${hall}.`); return;
         }
@@ -553,6 +577,12 @@
       el.classList.add("show");
     }
 
+    function hideBanner(elId){
+      const el = document.getElementById(elId);
+      el.textContent = "";
+      el.classList.remove("show");
+    }
+
     function resetRows(){
       document.getElementById("residence-rows").innerHTML = "";
       addResidenceRow();
@@ -561,8 +591,8 @@
     document.addEventListener("DOMContentLoaded", init);
 
     return {
-      HALLS, HALL_ROOM_TYPES, MAX_BEDS_BY_HALL, hallColors,
-      collectRows, validateWhen, showBanner, resetRows, addResidenceRow,
+      HALLS, HALL_ROOM_TYPES, MAX_BEDS_BY_HALL, hallColors, ANY_LABEL,
+      collectRows, validateWhen, showBanner, hideBanner, resetRows, addResidenceRow,
       isLikelyBot, canSubmitNow, markSubmitted
     };
   })();
@@ -574,6 +604,14 @@
      Anonymous auth not enabled, etc.) the form above still works
      for data entry; only live sync/submission is affected, and a
      visible banner explains why.
+
+     TWO INDEPENDENT DATA SOURCES:
+     - "sightings"      → this year's live, crowdsourced reports.
+     - "archive_2025_26"→ last year's historical data, loaded once
+                          via import-archive.html and never written
+                          to again. Switching the year tab swaps
+                          which collection is read; it never mixes
+                          the two or writes into the archive.
 ============================================================ -->
 <script type="module">
 try {
@@ -591,12 +629,12 @@ try {
   // Console (Project settings → General → Your apps → SDK setup).
   // ============================================================
   const firebaseConfig = {
-    apiKey: "AIzaSyAuwgunyh_2C8rUbVN08hvcw47xubLdhw0",
-    authDomain: "restracker-c6440.firebaseapp.com",
-    projectId: "restracker-c6440",
-    storageBucket: "restracker-c6440.firebasestorage.app",
-    messagingSenderId: "223599584957",
-    appId: "1:223599584957:web:8b5c7e195d5bf42912f9d4"
+    apiKey: "REPLACE_ME",
+    authDomain: "REPLACE_ME.firebaseapp.com",
+    projectId: "REPLACE_ME",
+    storageBucket: "REPLACE_ME.appspot.com",
+    messagingSenderId: "REPLACE_ME",
+    appId: "REPLACE_ME"
   };
 
   if (firebaseConfig.apiKey === "REPLACE_ME"){
@@ -608,15 +646,18 @@ try {
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
   const auth = getAuth(app);
-  const sightingsCol = collection(db, "sightings");
 
   const HALLS = window.VW.HALLS;
   const HALL_ROOM_TYPES = window.VW.HALL_ROOM_TYPES;
-  const hallColors = window.VW.hallColors;
+  const ANY_LABEL = window.VW.ANY_LABEL;
 
   const submitBtn = document.getElementById("submit-btn");
   const statusEl = document.getElementById("form-status");
   const formEl = document.getElementById("report-form");
+  const reportSection = document.getElementById("report-section");
+  const boardHeading = document.getElementById("board-heading");
+  const boardSubtext = document.getElementById("board-subtext");
+  const chartHeading = document.getElementById("chart-heading");
 
   let currentUser = null;
 
@@ -632,13 +673,86 @@ try {
   onAuthStateChanged(auth, (user)=>{
     if (user){
       currentUser = user;
-      submitBtn.disabled = false;
-      submitBtn.textContent = "Submit report";
+      if (activeView === "live"){
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Submit report";
+      }
     } else {
       currentUser = null;
       submitBtn.disabled = true;
       submitBtn.textContent = "Connecting…";
     }
+  });
+
+  // ---------- year tab / data-source switching ----------
+  let activeView = "live"; // "live" | "archive"
+  let unsubscribeSnapshot = null;
+  let allSightings = [];        // { hall, roomType, beds, note, selectionTime(ms) }
+  let latestByKey = {};         // "hall|||roomType" -> sighting
+  let prevCountByKey = {};
+
+  function keyOf(hall, roomType){ return hall + "|||" + roomType; }
+
+  function collectionNameFor(view){
+    return view === "archive" ? "archive_2025_26" : "sightings";
+  }
+
+  function subscribeToView(view){
+    if (unsubscribeSnapshot){ unsubscribeSnapshot(); unsubscribeSnapshot = null; }
+    allSightings = [];
+    latestByKey = {};
+    prevCountByKey = {};
+    window.VW.hideBanner("board-banner");
+
+    const colName = collectionNameFor(view);
+    const col = collection(db, colName);
+    const q = query(col, orderBy("selectionTime","asc"));
+    unsubscribeSnapshot = onSnapshot(q, (snap)=>{
+      allSightings = [];
+      latestByKey = {};
+      snap.forEach(docSnap=>{
+        const d = docSnap.data();
+        const ms = d.selectionTime && d.selectionTime.toMillis ? d.selectionTime.toMillis() : Date.now();
+        const record = { hall:d.hall, roomType:d.roomType, beds:d.beds, note:d.note || "", selectionTime: ms };
+        allSightings.push(record);
+        const key = keyOf(d.hall, d.roomType);
+        if (!latestByKey[key] || latestByKey[key].selectionTime < ms){
+          latestByKey[key] = record;
+        }
+      });
+      renderBoard();
+      renderChart();
+    }, (err)=>{
+      console.error(`Firestore read failed for ${colName}:`, err);
+      window.VW.showBanner("board-banner", `Couldn't load data from "${colName}". Check your Firestore security rules.`);
+    });
+  }
+
+  function setActiveView(view){
+    activeView = view;
+    document.querySelectorAll(".year-tab").forEach(btn=>{
+      btn.classList.toggle("active", btn.dataset.view === view);
+    });
+
+    if (view === "archive"){
+      reportSection.style.display = "none";
+      boardHeading.textContent = "Archived board — 2025–26";
+      boardSubtext.textContent = "Historical data from last year's self-selection. Read-only, stored completely separately from this year's live data.";
+      chartHeading.textContent = "How fast did they go last year?";
+      submitBtn.disabled = true;
+    } else {
+      reportSection.style.display = "";
+      boardHeading.textContent = "Live board";
+      boardSubtext.textContent = "Most recent report per residence, with a total remaining and the breakdown behind it.";
+      chartHeading.textContent = "How fast do they go?";
+      if (currentUser){ submitBtn.disabled = false; submitBtn.textContent = "Submit report"; }
+    }
+
+    subscribeToView(view);
+  }
+
+  document.querySelectorAll(".year-tab").forEach(btn=>{
+    btn.addEventListener("click", ()=> setActiveView(btn.dataset.view));
   });
 
   // ---------- chart residence / room-type selectors ----------
@@ -666,14 +780,8 @@ try {
   chartHallSelect.addEventListener("change", ()=>{ populateChartRoomTypes(); renderChart(); });
   chartRoomTypeSelect.addEventListener("change", renderChart);
 
-  // ---------- state ----------
-  let allSightings = [];        // { hall, roomType, beds, note, selectionTime(ms) }
-  let latestByKey = {};         // "hall|||roomType" -> sighting
-  let prevCountByKey = {};
-
-  function keyOf(hall, roomType){ return hall + "|||" + roomType; }
-
-  const board = document.getElementById("board");
+  // ---------- board rendering (table, with per-hall rollup total) ----------
+  const boardTbody = document.getElementById("board-tbody");
 
   function statusClass(beds){
     if (beds === null || beds === undefined) return "status-unknown";
@@ -692,34 +800,79 @@ try {
     return Math.floor(hrs/24) + "d ago";
   }
 
-  function renderBoard(){
-    board.innerHTML = "";
-    HALLS.forEach(hall=>{
-      const card = document.createElement("div");
-      card.className = "flap-card";
-      let rowsHtml = "";
-      (HALL_ROOM_TYPES[hall] || []).forEach(rt=>{
-        const key = keyOf(hall, rt);
-        const s = latestByKey[key];
-        const changed = s && prevCountByKey[key] !== undefined && prevCountByKey[key] !== s.beds;
-        const bedsDisplay = s ? s.beds : "—";
-        rowsHtml += `
-          <div class="flap-rt-row ${statusClass(s ? s.beds : null)}">
-            <div class="flap-rt-label">${rt}</div>
-            <div class="flap-rt-count-wrap">
-              <div class="flap-rt-count ${changed ? 'flip' : ''}">${bedsDisplay}</div>
-              <div class="flap-rt-unit">${s ? (s.beds === 1 ? "left" : "left") : "no reports"}</div>
-            </div>
-            <div class="flap-rt-meta">${s ? "seen " + timeAgo(s.selectionTime) : ""}</div>
-          </div>
-        `;
-        if (s) prevCountByKey[key] = s.beds;
-      });
-      card.innerHTML = `<div class="flap-hall">${hall}</div>${rowsHtml}`;
-      board.appendChild(card);
+  // Decide the best single "total remaining" number for a hall from
+  // whatever mix of specific-room-type reports and "Any (total)" reports
+  // exist. Prefers whichever signal is more recent; labels its basis so
+  // it's never presented as more precise than it actually is.
+  function computeHallTotal(hall){
+    const specificTypes = (HALL_ROOM_TYPES[hall] || []).filter(rt=> rt !== ANY_LABEL);
+    let sumSpecific = 0, countSpecific = 0, newestSpecificTs = 0;
+    specificTypes.forEach(rt=>{
+      const s = latestByKey[keyOf(hall, rt)];
+      if (s){ sumSpecific += s.beds; countSpecific++; newestSpecificTs = Math.max(newestSpecificTs, s.selectionTime); }
     });
+    const anyEntry = latestByKey[keyOf(hall, ANY_LABEL)];
+
+    if (!anyEntry && countSpecific === 0) return null;
+
+    if (!anyEntry){
+      return {
+        total: sumSpecific,
+        basis: `sum of ${countSpecific}/${specificTypes.length} room type${specificTypes.length>1?"s":""}`,
+        lastSeen: newestSpecificTs
+      };
+    }
+    if (countSpecific === 0){
+      return { total: anyEntry.beds, basis: "reported as one total", lastSeen: anyEntry.selectionTime };
+    }
+    // Both exist — trust whichever is more recent.
+    if (anyEntry.selectionTime >= newestSpecificTs){
+      return { total: anyEntry.beds, basis: "reported as one total (most recent)", lastSeen: anyEntry.selectionTime };
+    }
+    return {
+      total: sumSpecific,
+      basis: `sum of ${countSpecific}/${specificTypes.length} room type${specificTypes.length>1?"s":""} (most recent)`,
+      lastSeen: newestSpecificTs
+    };
   }
-  setInterval(renderBoard, 30000);
+
+  function renderBoard(){
+    boardTbody.innerHTML = "";
+    let anyData = false;
+
+    HALLS.forEach(hall=>{
+      const rollup = computeHallTotal(hall);
+      const tr = document.createElement("tr");
+
+      const badgesHtml = (HALL_ROOM_TYPES[hall] || []).map(rt=>{
+        const s = latestByKey[keyOf(hall, rt)];
+        if (!s) return "";
+        anyData = true;
+        return `<span class="bt-badge">${rt}: ${s.beds}</span>`;
+      }).join("");
+
+      const totalHtml = rollup
+        ? `<span class="bt-total ${statusClass(rollup.total)}">${rollup.total}</span><span class="bt-total-basis">${rollup.basis}</span>`
+        : `<span class="bt-total status-unknown">—</span><span class="bt-total-basis">no reports yet</span>`;
+
+      const lastSeenHtml = rollup ? timeAgo(rollup.lastSeen) : "—";
+
+      tr.innerHTML = `
+        <td class="bt-hall" data-label="Residence">${hall}</td>
+        <td data-label="Total remaining">${totalHtml}</td>
+        <td data-label="Breakdown"><div class="bt-badges">${badgesHtml || '<span class="bt-meta">no reports yet</span>'}</div></td>
+        <td class="bt-meta" data-label="Last seen">${lastSeenHtml}</td>
+      `;
+      boardTbody.appendChild(tr);
+    });
+
+    if (!anyData){
+      const emptyRow = document.createElement("tr");
+      emptyRow.innerHTML = `<td colspan="4" class="empty-note">No reports yet ${activeView === "archive" ? "in the archive" : "— be the first to submit one below"}.</td>`;
+      boardTbody.appendChild(emptyRow);
+    }
+  }
+  setInterval(()=>{ if (activeView === "live") renderBoard(); }, 30000);
 
   // ---------- chart ----------
   const ctx = document.getElementById("depletion-chart");
@@ -738,7 +891,7 @@ try {
     }
   });
 
-  const rtPalette = ["#F5B700","#5B9BD5","#4CAF7D","#E4572E","#B48EAD"];
+  const rtPalette = ["#F5B700","#5B9BD5","#4CAF7D","#E4572E","#B48EAD","#3EC1D3"];
 
   function renderChart(){
     const hall = chartHallSelect.value;
@@ -746,7 +899,6 @@ try {
     const roomTypes = rtSelected === "__all__" ? (HALL_ROOM_TYPES[hall] || []) : [rtSelected];
 
     const datasets = roomTypes.map((rt, i)=>{
-      const key = keyOf(hall, rt);
       const points = allSightings
         .filter(s=> s.hall === hall && s.roomType === rt)
         .sort((a,b)=> a.selectionTime - b.selectionTime)
@@ -763,31 +915,15 @@ try {
     chart.update();
   }
 
-  // ---------- live sync ----------
-  const q = query(sightingsCol, orderBy("selectionTime","asc"));
-  onSnapshot(q, (snap)=>{
-    allSightings = [];
-    latestByKey = {};
-    snap.forEach(docSnap=>{
-      const d = docSnap.data();
-      const ms = d.selectionTime && d.selectionTime.toMillis ? d.selectionTime.toMillis() : Date.now();
-      const record = { hall:d.hall, roomType:d.roomType, beds:d.beds, note:d.note || "", selectionTime: ms };
-      allSightings.push(record);
-      const key = keyOf(d.hall, d.roomType);
-      if (!latestByKey[key] || latestByKey[key].selectionTime < ms){
-        latestByKey[key] = record;
-      }
-    });
-    renderBoard();
-    renderChart();
-  }, (err)=>{
-    console.error("Firestore read failed:", err);
-    window.VW.showBanner("board-banner", "Couldn't load live data. Check your Firestore security rules and config.");
-  });
-
-  // ---------- submit ----------
+  // ---------- submit (live view only — archive is read-only) ----------
   formEl.addEventListener("submit", async (e)=>{
     e.preventDefault();
+
+    if (activeView !== "live"){
+      statusEl.textContent = "Switch to the 2026–27 (Live) tab to submit a report.";
+      statusEl.className = "form-status err";
+      return;
+    }
 
     // Bot check first — fail silently-successful so bots don't learn to route around it.
     if (window.VW.isLikelyBot()){
@@ -835,6 +971,7 @@ try {
     statusEl.className = "form-status";
 
     try{
+      const sightingsCol = collection(db, "sightings"); // always the live collection — never the archive
       const batch = writeBatch(db);
       const batchId = (crypto.randomUUID ? crypto.randomUUID() : (Date.now() + "-" + Math.random().toString(16).slice(2)));
       const selectionTimestamp = Timestamp.fromMillis(when.selectionTimeMs);
@@ -872,6 +1009,9 @@ try {
       submitBtn.disabled = false;
     }
   });
+
+  // kick off on the live view
+  setActiveView("live");
 
 } catch (err) {
   console.error("Vacancy Watch: Firebase module failed to load.", err);

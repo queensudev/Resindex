@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Vacancy Watch — Archive Importer (owner use only)</title>
+<style>
+  :root{
+    --bg:#0E1B2C; --panel:#16283F; --panel-light:#1D3350; --line:#2A3F5A;
+    --gold:#F5B700; --blue:#5B9BD5; --text:#EDEFF2; --muted:#93A6BD;
+    --danger:#E4572E; --success:#4CAF7D;
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; background:var(--bg); color:var(--text); font-family:'Inter',system-ui,sans-serif; line-height:1.5; padding:32px; }
+  .wrap{ max-width:900px; margin:0 auto; }
+  h1{ font-size:24px; margin-bottom:6px; }
+  p.lead{ color:var(--muted); font-size:14px; margin-top:0; }
+  .banner{ background:rgba(228,87,46,.12); border:1px solid var(--danger); color:#ffbfa8; border-radius:6px; padding:14px 16px; font-size:13.5px; margin:20px 0; }
+  textarea{
+    width:100%; min-height:220px; background:var(--panel-light); border:1px solid var(--line);
+    color:var(--text); border-radius:6px; padding:12px; font-family:'IBM Plex Mono',monospace; font-size:12.5px;
+  }
+  button{
+    background:var(--gold); color:#1a1200; border:none; border-radius:6px; padding:10px 18px;
+    font-weight:700; font-size:13.5px; cursor:pointer; margin-top:12px; margin-right:8px;
+  }
+  button.secondary{ background:transparent; border:1px solid var(--blue); color:var(--blue); }
+  button:disabled{ opacity:.5; cursor:not-allowed; }
+  table{ width:100%; border-collapse:collapse; margin-top:20px; font-size:12.5px; }
+  th,td{ text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); }
+  th{ color:var(--muted); text-transform:uppercase; font-size:10.5px; }
+  .ok{ color:var(--success); }
+  .err{ color:var(--danger); }
+  #status{ margin-top:16px; font-size:13.5px; }
+  code{ background:var(--panel-light); padding:1px 5px; border-radius:4px; }
+  .hint{ color:var(--muted); font-size:12.5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Archive importer — 2025–26</h1>
+  <p class="lead">Owner-use-only tool. Not linked from the main site. Writes exclusively to the <code>archive_2025_26</code> collection — it never touches this year's <code>sightings</code> collection.</p>
+
+  <div class="banner">
+    Before using this: temporarily set the <code>archive_2025_26</code> rule in Firestore to
+    <code>allow create: if request.auth != null;</code>, run your import, then change it back to
+    <code>allow write: if false;</code> afterward. See SETUP.md for the exact rule text.
+  </div>
+
+  <p><strong>Format:</strong> one entry per line, separated by <code>|</code>:</p>
+  <p class="hint"><code>Residence | Room Type | Beds Remaining | Date (YYYY-MM-DD) | Time (HH:MM, 24h) | Note (optional)</code></p>
+  <p class="hint">Room type must exactly match one of the building's real types, or use <code>Any (total)</code> if you only have an overall number. Example:</p>
+  <p class="hint"><code>Chown Hall | Double | 5 | 2025-07-23 | 14:30 | only doubles left</code></p>
+
+  <textarea id="input" placeholder="Paste your rows here, one per line…"></textarea>
+  <div>
+    <button type="button" id="preview-btn">Parse &amp; preview</button>
+    <button type="button" id="import-btn" class="secondary" disabled>Import valid rows</button>
+  </div>
+
+  <div id="status"></div>
+  <table id="preview-table" style="display:none;">
+    <thead><tr><th>Line</th><th>Residence</th><th>Room type</th><th>Beds</th><th>When</th><th>Status</th></tr></thead>
+    <tbody id="preview-tbody"></tbody>
+  </table>
+</div>
+
+<script>
+  // Mirrors the main site's residence data exactly — keep in sync if you
+  // ever change HALL_ROOM_TYPES or MAX_BEDS_BY_HALL in index.html.
+  const ANY_LABEL = "Any (total)";
+  const HALL_ROOM_TYPES = {
+    "Adelaide Hall": ["Single","Double","Triple"],
+    "Ban Righ Hall": ["Single","Double"],
+    "Brant House": ["Single Plus"],
+    "Chown Hall": ["Single","Double","Triple","Quad"],
+    "David C. Smith House": ["Single Plus"],
+    "Endaayaan – Tkanónsote": ["Single Plus"],
+    "Gordon-Brockington House": ["Single","Double","Triple","Quad","Loft Double"],
+    "Harkness Hall": ["Single","Triple","Quad"],
+    "Jean Royce Hall": ["Single","Double"],
+    "John Deutsch University Centre (JDUC)": ["Single Plus"],
+    "Leggett Hall": ["Single Plus"],
+    "Leonard Hall": ["Single","Double","Triple","Quad","Loft Double"],
+    "McNeill House": ["Single","Double","Loft Double"],
+    "Morris Hall": ["Single","Double","Triple","Quad","Loft Double"],
+    "Victoria Hall": ["Single","Double","Triple","Quad","Loft Double"],
+    "Waldron Tower": ["Single","Double"],
+    "Watts Hall": ["Single Plus"]
+  };
+  Object.keys(HALL_ROOM_TYPES).forEach(h=> HALL_ROOM_TYPES[h].push(ANY_LABEL));
+  const MAX_BEDS_BY_HALL = {
+    "Adelaide Hall": 113, "Ban Righ Hall": 65, "Brant House": 262, "Chown Hall": 192,
+    "David C. Smith House": 262, "Endaayaan – Tkanónsote": 322, "Gordon-Brockington House": 408,
+    "Harkness Hall": 109, "Jean Royce Hall": 605, "John Deutsch University Centre (JDUC)": 86,
+    "Leggett Hall": 324, "Leonard Hall": 357, "McNeill House": 200, "Morris Hall": 265,
+    "Victoria Hall": 824, "Waldron Tower": 278, "Watts Hall": 166
+  };
+
+  let parsedRows = []; // { ok, hall, roomType, beds, note, ms, error, lineNo }
+
+  function parseLine(line, lineNo){
+    const parts = line.split("|").map(p=>p.trim());
+    if (parts.length < 5){
+      return { ok:false, lineNo, error: "Expected at least 5 fields separated by |" };
+    }
+    const [hall, roomType, bedsRaw, dateRaw, timeRaw, note] = parts;
+
+    if (!HALL_ROOM_TYPES[hall]){
+      return { ok:false, lineNo, hall, error: `Unknown residence "${hall}"` };
+    }
+    if (!HALL_ROOM_TYPES[hall].includes(roomType)){
+      return { ok:false, lineNo, hall, roomType, error: `"${roomType}" isn't a valid room type for ${hall}` };
+    }
+    const beds = parseInt(bedsRaw, 10);
+    if (isNaN(beds) || beds < 0){
+      return { ok:false, lineNo, hall, roomType, error: `"${bedsRaw}" isn't a valid non-negative number` };
+    }
+    const cap = MAX_BEDS_BY_HALL[hall];
+    if (cap && beds > cap){
+      return { ok:false, lineNo, hall, roomType, error: `${beds} exceeds ${hall}'s capacity of ${cap}` };
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateRaw)){
+      return { ok:false, lineNo, hall, roomType, error: `Date "${dateRaw}" must be YYYY-MM-DD` };
+    }
+    if (!/^\d{2}:\d{2}$/.test(timeRaw)){
+      return { ok:false, lineNo, hall, roomType, error: `Time "${timeRaw}" must be HH:MM (24h)` };
+    }
+    const ms = new Date(`${dateRaw}T${timeRaw}:00`).getTime();
+    if (isNaN(ms)){
+      return { ok:false, lineNo, hall, roomType, error: `Couldn't parse "${dateRaw} ${timeRaw}" as a date/time` };
+    }
+
+    return { ok:true, lineNo, hall, roomType, beds, note: (note || "").slice(0,200), ms };
+  }
+
+  document.getElementById("preview-btn").addEventListener("click", ()=>{
+    const raw = document.getElementById("input").value;
+    const lines = raw.split("\n").map(l=>l.trim()).filter(l=> l.length > 0);
+    parsedRows = lines.map((l,i)=> parseLine(l, i+1));
+
+    const tbody = document.getElementById("preview-tbody");
+    tbody.innerHTML = "";
+    let okCount = 0;
+    parsedRows.forEach(r=>{
+      const tr = document.createElement("tr");
+      if (r.ok){
+        okCount++;
+        tr.innerHTML = `<td>${r.lineNo}</td><td>${r.hall}</td><td>${r.roomType}</td><td>${r.beds}</td><td>${new Date(r.ms).toLocaleString()}</td><td class="ok">OK</td>`;
+      } else {
+        tr.innerHTML = `<td>${r.lineNo}</td><td>${r.hall||""}</td><td>${r.roomType||""}</td><td></td><td></td><td class="err">${r.error}</td>`;
+      }
+      tbody.appendChild(tr);
+    });
+    document.getElementById("preview-table").style.display = parsedRows.length ? "table" : "none";
+    document.getElementById("status").textContent =
+      `${okCount} of ${parsedRows.length} row(s) valid.` + (okCount < parsedRows.length ? " Fix the errors above, or import just the valid rows." : "");
+    document.getElementById("import-btn").disabled = okCount === 0;
+  });
+
+  document.getElementById("import-btn").addEventListener("click", async ()=>{
+    const statusEl = document.getElementById("status");
+    const importBtn = document.getElementById("import-btn");
+    importBtn.disabled = true;
+    statusEl.textContent = "Connecting to Firebase…";
+
+    try{
+      const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
+      const { getFirestore, collection, doc, writeBatch, serverTimestamp, Timestamp } =
+        await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+      const { getAuth, signInAnonymously } =
+        await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
+
+      // ============================================================
+      // Use the SAME config as index.html (same Firebase project).
+      // ============================================================
+      const firebaseConfig = {
+        apiKey: "REPLACE_ME",
+        authDomain: "REPLACE_ME.firebaseapp.com",
+        projectId: "REPLACE_ME",
+        storageBucket: "REPLACE_ME.appspot.com",
+        messagingSenderId: "REPLACE_ME",
+        appId: "REPLACE_ME"
+      };
+      if (firebaseConfig.apiKey === "REPLACE_ME"){
+        statusEl.textContent = "Add your Firebase config in this file (same values as index.html) before importing.";
+        importBtn.disabled = false;
+        return;
+      }
+
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+      const auth = getAuth(app);
+
+      statusEl.textContent = "Signing in…";
+      const cred = await signInAnonymously(auth);
+      const uid = cred.user.uid;
+
+      const validRows = parsedRows.filter(r=> r.ok);
+      const archiveCol = collection(db, "archive_2025_26");
+      const importBatchId = "archive-import-" + Date.now();
+
+      // Firestore batches cap at 500 writes — chunk just in case.
+      const CHUNK = 400;
+      let written = 0;
+      for (let i = 0; i < validRows.length; i += CHUNK){
+        const chunk = validRows.slice(i, i + CHUNK);
+        const batch = writeBatch(db);
+        chunk.forEach(r=>{
+          const ref = doc(archiveCol);
+          batch.set(ref, {
+            hall: r.hall,
+            roomType: r.roomType,
+            beds: r.beds,
+            note: r.note,
+            selectionTime: Timestamp.fromMillis(r.ms),
+            submittedAt: serverTimestamp(),
+            batchId: importBatchId,
+            reporterId: uid
+          });
+        });
+        await batch.commit();
+        written += chunk.length;
+        statusEl.textContent = `Imported ${written} / ${validRows.length}…`;
+      }
+
+      statusEl.textContent = `Done — imported ${written} row(s) into archive_2025_26. Remember to lock the collection's write rule back to "if false" now.`;
+    }catch(err){
+      console.error(err);
+      statusEl.textContent = "Import failed: " + (err.code || err.message || "unknown error") +
+        ". Check that archive_2025_26's rule temporarily allows create, and that Anonymous auth is enabled.";
+      importBtn.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>
