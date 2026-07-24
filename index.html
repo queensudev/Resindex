@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Vacancy Watch — Queen's Residence Self-Selection Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<style>
+  :root{
+    --bg:#0E1B2C;
+    --panel:#16283F;
+    --panel-light:#1D3350;
+    --line:#2A3F5A;
+    --gold:#F5B700;
+    --blue:#5B9BD5;
+    --text:#EDEFF2;
+    --muted:#93A6BD;
+    --danger:#E4572E;
+    --success:#4CAF7D;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    line-height:1.5;
+  }
+  h1,h2,h3{ font-family:'Fraunces',serif; margin:0; }
+  .wrap{ max-width:1100px; margin:0 auto; padding:0 24px; }
+
+  header.site{ padding:56px 0 32px; border-bottom:1px solid var(--line); }
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    color:var(--gold);
+    font-size:13px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    margin-bottom:10px;
+  }
+  header.site h1{ font-size:clamp(32px,5vw,52px); font-weight:600; max-width:16ch; }
+  header.site p{ color:var(--muted); max-width:56ch; margin-top:14px; font-size:16px; }
+
+  section{ padding:48px 0; border-bottom:1px solid var(--line); }
+  section h2{ font-size:26px; font-weight:600; margin-bottom:6px; }
+  .section-sub{ color:var(--muted); font-size:14px; margin-bottom:28px; }
+
+  /* --- board --- */
+  .board{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
+    gap:14px;
+    align-items:start;
+  }
+  .flap-card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:16px 18px;
+  }
+  .flap-hall{
+    font-size:14px;
+    font-weight:600;
+    margin-bottom:10px;
+    font-family:'Fraunces',serif;
+  }
+  .flap-rt-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    gap:10px;
+    padding:7px 0;
+    border-top:1px solid var(--line);
+  }
+  .flap-rt-row:first-of-type{ border-top:none; }
+  .flap-rt-label{ font-size:12.5px; color:var(--muted); flex:1; }
+  .flap-rt-count-wrap{ display:flex; align-items:baseline; gap:5px; }
+  .flap-rt-count{
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:600;
+    font-size:17px;
+    transition:opacity .3s ease;
+  }
+  .flap-rt-count.flip{ animation:flip .5s ease; }
+  @keyframes flip{
+    0%{ transform:rotateX(0deg); opacity:1; }
+    45%{ transform:rotateX(90deg); opacity:.2; }
+    55%{ transform:rotateX(90deg); opacity:.2; }
+    100%{ transform:rotateX(0deg); opacity:1; }
+  }
+  .flap-rt-unit{ font-size:10.5px; color:var(--muted); }
+  .flap-rt-meta{ font-size:10px; color:var(--muted); text-align:right; white-space:nowrap; }
+  .status-plenty .flap-rt-count{ color:var(--success); }
+  .status-low .flap-rt-count{ color:var(--gold); }
+  .status-gone .flap-rt-count{ color:var(--danger); }
+  .status-unknown .flap-rt-count{ color:var(--muted); }
+
+  /* --- banners --- */
+  .banner{ border-radius:6px; padding:12px 16px; font-size:13.5px; margin-bottom:20px; display:none; }
+  .banner.show{ display:block; }
+  .banner.warn{ background:rgba(228,87,46,.12); border:1px solid var(--danger); color:#ffbfa8; }
+  .banner.info{ background:rgba(91,155,213,.12); border:1px solid var(--blue); color:#cfe3f7; }
+
+  /* --- form --- */
+  form.report-form{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:28px;
+    max-width:860px;
+  }
+  .when-row{
+    display:grid;
+    grid-template-columns:1.2fr 1fr;
+    gap:18px;
+    padding-bottom:20px;
+    margin-bottom:20px;
+    border-bottom:1px dashed var(--line);
+  }
+  label{ display:block; font-size:13px; color:var(--muted); margin-bottom:6px; font-weight:500; }
+  select,input,textarea{
+    width:100%;
+    background:var(--panel-light);
+    border:1px solid var(--line);
+    color:var(--text);
+    border-radius:6px;
+    padding:10px 12px;
+    font-family:'Inter',sans-serif;
+    font-size:14px;
+  }
+  select:disabled,input:disabled{ opacity:.5; cursor:not-allowed; }
+  textarea{ resize:vertical; min-height:60px; }
+  .hint{ font-size:12px; color:var(--muted); margin-top:6px; }
+
+  /* honeypot — hidden from sighted users and screen readers alike */
+  .hp-wrap{
+    position:absolute;
+    width:1px; height:1px;
+    overflow:hidden;
+    opacity:0;
+    pointer-events:none;
+    left:-9999px;
+  }
+
+  #residence-rows{ display:flex; flex-direction:column; gap:14px; margin-bottom:16px; }
+  .residence-row{
+    display:grid;
+    grid-template-columns:1.4fr 1.1fr 0.9fr 1.3fr auto;
+    gap:10px;
+    align-items:end;
+    background:var(--panel-light);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:14px;
+  }
+  .row-remove{
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--muted);
+    border-radius:6px;
+    width:38px;
+    height:38px;
+    cursor:pointer;
+    font-size:16px;
+    line-height:1;
+  }
+  .row-remove:hover{ color:var(--danger); border-color:var(--danger); }
+
+  .add-row-btn{
+    background:transparent;
+    border:1px dashed var(--blue);
+    color:var(--blue);
+    border-radius:6px;
+    padding:10px 16px;
+    font-size:13.5px;
+    font-weight:600;
+    cursor:pointer;
+    margin-bottom:22px;
+  }
+  .add-row-btn:hover{ background:rgba(91,155,213,.08); }
+
+  button.submit{
+    background:var(--gold);
+    color:#1a1200;
+    border:none;
+    border-radius:6px;
+    padding:12px 20px;
+    font-weight:700;
+    font-size:14px;
+    cursor:pointer;
+  }
+  button.submit:hover{ filter:brightness(1.05); }
+  button.submit:disabled{ opacity:.6; cursor:not-allowed; }
+  .form-status{ font-size:13px; margin-top:10px; min-height:18px; }
+  .form-status.ok{ color:var(--success); }
+  .form-status.err{ color:var(--danger); }
+
+  /* --- chart --- */
+  .chart-controls{ display:flex; gap:12px; align-items:center; margin-bottom:20px; flex-wrap:wrap; }
+  .chart-controls select{ width:auto; min-width:220px; }
+  .chart-box{ background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:20px; height:420px; }
+
+  footer{ padding:32px 0 60px; color:var(--muted); font-size:13px; }
+  footer a{ color:var(--blue); }
+
+  @media(max-width:640px){
+    .when-row{ grid-template-columns:1fr; }
+    .residence-row{ grid-template-columns:1fr; }
+    .row-remove{ justify-self:end; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="site">
+    <div class="eyebrow">Unofficial &middot; Crowdsourced &middot; Queen's University</div>
+    <h1>Know what's left before your slot opens.</h1>
+    <p>Residence self-selection hides everyone else's screen from you. This board is built entirely from what people ahead of you report seeing, in real time — so you're not walking in blind.</p>
+  </header>
+
+  <section id="board-section">
+    <h2>Live board</h2>
+    <div class="section-sub">Most recent report per room type, by the time it was actually seen on someone's screen.</div>
+    <div id="board-banner" class="banner warn"></div>
+    <div class="board" id="board"></div>
+  </section>
+
+  <section id="report-section">
+    <h2>Report what you see</h2>
+    <div class="section-sub">In your self-selection window right now? Log every room type you checked in one go — takes 30 seconds and helps everyone after you.</div>
+
+    <div id="form-banner" class="banner warn"></div>
+
+    <form class="report-form" id="report-form">
+      <div class="when-row">
+        <div>
+          <label for="select-day">Which day is this?</label>
+          <select id="select-day">
+            <option value="2026-07-22">July 22, 2026 (8:00 AM – 7:00 PM)</option>
+            <option value="2026-07-23">July 23, 2026 (8:00 AM – 7:00 PM)</option>
+            <option value="2026-07-24">July 24, 2026 (8:00 AM – 2:00 PM)</option>
+          </select>
+        </div>
+        <div>
+          <label for="select-time">What time did you see this?</label>
+          <input type="time" id="select-time" />
+          <div class="hint" id="time-hint"></div>
+        </div>
+      </div>
+
+      <div id="residence-rows"></div>
+
+      <button type="button" class="add-row-btn" id="add-row-btn">+ Add another residence / room type</button>
+
+      <!-- Honeypot: real users never see or focus this. Bots that blindly fill every field will. -->
+      <div class="hp-wrap" aria-hidden="true">
+        <label for="hp-field">Leave blank</label>
+        <input type="text" id="hp-field" name="hp_website" tabindex="-1" autocomplete="off" />
+      </div>
+
+      <div>
+        <button type="submit" class="submit" id="submit-btn" disabled>Connecting…</button>
+        <div class="form-status" id="form-status"></div>
+      </div>
+    </form>
+  </section>
+
+  <section id="chart-section">
+    <h2>How fast do they go?</h2>
+    <div class="section-sub">Beds/rooms remaining over time, based on every report submitted. Steeper drop = faster depletion.</div>
+    <div class="chart-controls">
+      <label style="margin:0;">Residence:</label>
+      <select id="chart-hall-select"></select>
+      <label style="margin:0;">Room type:</label>
+      <select id="chart-roomtype-select"></select>
+    </div>
+    <div class="chart-box">
+      <canvas id="depletion-chart"></canvas>
+    </div>
+  </section>
+
+  <footer>
+    Built by students, not affiliated with Queen's University Residence Services. Data is entirely self-reported and may not be accurate —
+    always confirm in the official <a href="https://portal.housing.queensu.ca/" target="_blank" rel="noopener">Housing Portal</a>.
+    A year-over-year archive and trend-prediction view is planned once this season's data is in.
+  </footer>
+</div>
+
+<!-- ============================================================
+     PART 1 — plain script, no imports, no network dependency.
+     Always runs, even if Firebase/CDN fails, so the form and
+     dropdowns are never "dead" on the page.
+
+     IMPORTANT: HALL_ROOM_TYPES and MAX_BEDS_BY_HALL below are
+     mirrored in firestore.rules (see SETUP.md). If you ever add,
+     remove, or rename a residence or change a capacity number,
+     update BOTH places — the rules are the real enforcement, this
+     copy is only for a good in-browser experience.
+============================================================ -->
+<script>
+  window.VW = (function(){
+    const PAGE_LOAD_MS = Date.now();
+    const MIN_FILL_TIME_MS = 1200;      // reject submissions faster than this (likely a bot)
+    const RESUBMIT_COOLDOWN_MS = 15000; // mirrors the 15s server-side rate limit
+
+    const HALL_ROOM_TYPES = {
+      "Adelaide Hall": ["Single","Double","Triple"],
+      "Ban Righ Hall": ["Single","Double"],
+      "Brant House": ["Single Plus"],
+      "Chown Hall": ["Single","Double","Triple","Quad"],
+      "David C. Smith House": ["Single Plus"],
+      "Endaayaan – Tkanónsote": ["Single Plus"],
+      "Gordon-Brockington House": ["Single","Double","Triple","Quad","Loft Double"],
+      "Harkness Hall": ["Single","Triple","Quad"],
+      "Jean Royce Hall": ["Single","Double"],
+      "John Deutsch University Centre (JDUC)": ["Single Plus"],
+      "Leggett Hall": ["Single Plus"],
+      "Leonard Hall": ["Single","Double","Triple","Quad","Loft Double"],
+      "McNeill House": ["Single","Double","Loft Double"],
+      "Morris Hall": ["Single","Double","Triple","Quad","Loft Double"],
+      "Victoria Hall": ["Single","Double","Triple","Quad","Loft Double"],
+      "Waldron Tower": ["Single","Double"],
+      "Watts Hall": ["Single Plus"]
+    };
+
+    const MAX_BEDS_BY_HALL = {
+      "Adelaide Hall": 113, "Ban Righ Hall": 65, "Brant House": 262, "Chown Hall": 192,
+      "David C. Smith House": 262, "Endaayaan – Tkanónsote": 322, "Gordon-Brockington House": 408,
+      "Harkness Hall": 109, "Jean Royce Hall": 605, "John Deutsch University Centre (JDUC)": 86,
+      "Leggett Hall": 324, "Leonard Hall": 357, "McNeill House": 200, "Morris Hall": 265,
+      "Victoria Hall": 824, "Waldron Tower": 278, "Watts Hall": 166
+    };
+
+    const HALLS = Object.keys(HALL_ROOM_TYPES);
+
+    const DAY_WINDOWS = {
+      "2026-07-22": { startHour: 8, endHour: 19 },
+      "2026-07-23": { startHour: 8, endHour: 19 },
+      "2026-07-24": { startHour: 8, endHour: 14 }
+    };
+
+    const palette = ["#F5B700","#5B9BD5","#4CAF7D","#E4572E","#B48EAD","#3EC1D3","#F29E4C","#8E9AAF","#FF6B9D","#6DD3CE","#C9CBA3","#FFC857","#A5668B","#00A896","#EF8354","#7F5539","#748CAB"];
+    const hallColors = {};
+    HALLS.forEach((h,i)=> hallColors[h] = palette[i % palette.length]);
+
+    let rowCounter = 0;
+
+    function buildHallOptionsHTML(){
+      let html = '<option value="" disabled selected>Select a residence…</option>';
+      HALLS.forEach(h=>{ html += `<option value="${h}">${h}</option>`; });
+      return html;
+    }
+
+    function buildRoomTypeOptionsHTML(hall){
+      if (!hall || !HALL_ROOM_TYPES[hall]){
+        return '<option value="" disabled selected>Select a residence first</option>';
+      }
+      let html = '<option value="" disabled selected>Select a room type…</option>';
+      HALL_ROOM_TYPES[hall].forEach(rt=>{ html += `<option value="${rt}">${rt}</option>`; });
+      return html;
+    }
+
+    function addResidenceRow(){
+      rowCounter++;
+      const row = document.createElement("div");
+      row.className = "residence-row";
+      row.dataset.rowId = "row-" + rowCounter;
+      row.innerHTML = `
+        <div>
+          <label>Residence</label>
+          <select class="row-hall">${buildHallOptionsHTML()}</select>
+        </div>
+        <div>
+          <label>Room type</label>
+          <select class="row-roomtype" disabled>${buildRoomTypeOptionsHTML(null)}</select>
+        </div>
+        <div>
+          <label>Remaining</label>
+          <input type="number" class="row-beds" min="0" step="1" placeholder="e.g. 12" />
+          <div class="hint row-cap-hint"></div>
+        </div>
+        <div>
+          <label>Note (optional)</label>
+          <input type="text" class="row-note" placeholder="e.g. only doubles left" maxlength="200" />
+        </div>
+        <button type="button" class="row-remove" title="Remove this row">✕</button>
+      `;
+      document.getElementById("residence-rows").appendChild(row);
+
+      const hallSelect = row.querySelector(".row-hall");
+      const roomTypeSelect = row.querySelector(".row-roomtype");
+      const bedsInput = row.querySelector(".row-beds");
+      const capHint = row.querySelector(".row-cap-hint");
+
+      hallSelect.addEventListener("change", ()=>{
+        const hall = hallSelect.value;
+        roomTypeSelect.innerHTML = buildRoomTypeOptionsHTML(hall);
+        roomTypeSelect.disabled = !hall;
+        const cap = MAX_BEDS_BY_HALL[hall];
+        if (cap){
+          bedsInput.max = String(cap);
+          capHint.textContent = `This building holds ${cap} first-year beds total — that's the ceiling.`;
+        } else {
+          bedsInput.removeAttribute("max");
+          capHint.textContent = "";
+        }
+      });
+
+      row.querySelector(".row-remove").addEventListener("click", ()=>{
+        const rows = document.querySelectorAll(".residence-row");
+        if (rows.length > 1){ row.remove(); } else {
+          hallSelect.value = "";
+          roomTypeSelect.innerHTML = buildRoomTypeOptionsHTML(null);
+          roomTypeSelect.disabled = true;
+          bedsInput.value = "";
+          bedsInput.removeAttribute("max");
+          capHint.textContent = "";
+          row.querySelector(".row-note").value = "";
+        }
+      });
+    }
+
+    function collectRows(){
+      const rows = Array.from(document.querySelectorAll(".residence-row"));
+      const entries = [];
+      const errors = [];
+      const seenKeys = new Set();
+
+      rows.forEach((row, idx)=>{
+        const hall = row.querySelector(".row-hall").value;
+        const roomType = row.querySelector(".row-roomtype").value;
+        const bedsRaw = row.querySelector(".row-beds").value;
+        const note = row.querySelector(".row-note").value.trim();
+
+        const isBlank = !hall && !roomType && bedsRaw === "" && !note;
+        if (isBlank) return;
+
+        if (!hall){ errors.push(`Row ${idx+1}: select a residence.`); return; }
+        if (!roomType){ errors.push(`Row ${idx+1} (${hall}): select a room type.`); return; }
+        if (!HALL_ROOM_TYPES[hall] || !HALL_ROOM_TYPES[hall].includes(roomType)){
+          errors.push(`Row ${idx+1}: "${roomType}" isn't offered in ${hall}.`); return;
+        }
+
+        const beds = parseInt(bedsRaw, 10);
+        const cap = MAX_BEDS_BY_HALL[hall];
+        if (bedsRaw === "" || isNaN(beds) || beds < 0){
+          errors.push(`Row ${idx+1} (${hall} — ${roomType}): enter a valid number of beds/rooms remaining.`);
+          return;
+        }
+        if (cap && beds > cap){
+          errors.push(`Row ${idx+1} (${hall}): ${beds} is more than the building's total first-year capacity (${cap}). Double-check the number.`);
+          return;
+        }
+        if (note.length > 200){
+          errors.push(`Row ${idx+1} (${hall}): note is too long (200 characters max).`);
+          return;
+        }
+
+        const key = hall + "|||" + roomType;
+        if (seenKeys.has(key)){
+          errors.push(`"${hall} — ${roomType}" is entered more than once — combine into a single row.`);
+          return;
+        }
+        seenKeys.add(key);
+        entries.push({ hall, roomType, beds, note });
+      });
+
+      if (entries.length === 0 && errors.length === 0){
+        errors.push("Add at least one residence to report.");
+      }
+      return { entries, errors };
+    }
+
+    function validateWhen(){
+      const day = document.getElementById("select-day").value;
+      const time = document.getElementById("select-time").value;
+      const window_ = DAY_WINDOWS[day];
+      const errors = [];
+      let selectionTimeMs = null;
+
+      if (!time){
+        errors.push("Enter the time you saw this.");
+        return { errors, selectionTimeMs };
+      }
+
+      const [h, m] = time.split(":").map(Number);
+      const hourDecimal = h + m/60;
+
+      if (hourDecimal < window_.startHour || hourDecimal > window_.endHour){
+        const fmt = (hh)=> {
+          const period = hh >= 12 ? "PM" : "AM";
+          let hr12 = hh % 12; if (hr12 === 0) hr12 = 12;
+          return `${hr12}:00 ${period}`;
+        };
+        errors.push(`For ${day}, time must be between ${fmt(window_.startHour)} and ${fmt(window_.endHour)}.`);
+        return { errors, selectionTimeMs };
+      }
+
+      const candidate = new Date(`${day}T${time}:00`);
+      selectionTimeMs = candidate.getTime();
+
+      if (selectionTimeMs > Date.now()){
+        errors.push("That time hasn't happened yet — enter a time that's already occurred.");
+        return { errors, selectionTimeMs: null };
+      }
+
+      return { errors, selectionTimeMs };
+    }
+
+    function updateTimeHint(){
+      const day = document.getElementById("select-day").value;
+      const w = DAY_WINDOWS[day];
+      const timeInput = document.getElementById("select-time");
+      timeInput.min = String(w.startHour).padStart(2,"0") + ":00";
+      timeInput.max = String(w.endHour).padStart(2,"0") + ":00";
+      document.getElementById("time-hint").textContent =
+        `Allowed: ${timeInput.min}–${timeInput.max} on this day.`;
+    }
+
+    function isLikelyBot(){
+      const hpFilled = document.getElementById("hp-field").value.trim() !== "";
+      const tooFast = (Date.now() - PAGE_LOAD_MS) < MIN_FILL_TIME_MS;
+      return hpFilled || tooFast;
+    }
+
+    function canSubmitNow(){
+      const last = parseInt(localStorage.getItem("vw_lastSubmit") || "0", 10);
+      const elapsed = Date.now() - last;
+      if (elapsed < RESUBMIT_COOLDOWN_MS){
+        return { ok:false, waitSeconds: Math.ceil((RESUBMIT_COOLDOWN_MS - elapsed)/1000) };
+      }
+      return { ok:true, waitSeconds:0 };
+    }
+
+    function markSubmitted(){
+      try{ localStorage.setItem("vw_lastSubmit", String(Date.now())); }catch(e){ /* ignore */ }
+    }
+
+    function init(){
+      addResidenceRow();
+      document.getElementById("add-row-btn").addEventListener("click", addResidenceRow);
+      document.getElementById("select-day").addEventListener("change", updateTimeHint);
+      updateTimeHint();
+    }
+
+    function showBanner(elId, msg){
+      const el = document.getElementById(elId);
+      el.textContent = msg;
+      el.classList.add("show");
+    }
+
+    function resetRows(){
+      document.getElementById("residence-rows").innerHTML = "";
+      addResidenceRow();
+    }
+
+    document.addEventListener("DOMContentLoaded", init);
+
+    return {
+      HALLS, HALL_ROOM_TYPES, MAX_BEDS_BY_HALL, hallColors,
+      collectRows, validateWhen, showBanner, resetRows, addResidenceRow,
+      isLikelyBot, canSubmitNow, markSubmitted
+    };
+  })();
+</script>
+
+<!-- ============================================================
+     PART 2 — Firebase module (Auth + Firestore). If this fails to
+     load (blocked network, bad config, opened as a local file,
+     Anonymous auth not enabled, etc.) the form above still works
+     for data entry; only live sync/submission is affected, and a
+     visible banner explains why.
+============================================================ -->
+<script type="module">
+try {
+  const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
+  const {
+    getFirestore, collection, doc, writeBatch, onSnapshot,
+    query, orderBy, serverTimestamp, Timestamp
+  } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+  const {
+    getAuth, signInAnonymously, onAuthStateChanged
+  } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
+
+  // ============================================================
+  // REPLACE with your own project's config from the Firebase
+  // Console (Project settings → General → Your apps → SDK setup).
+  // ============================================================
+  const firebaseConfig = {
+    apiKey: "AIzaSyAuwgunyh_2C8rUbVN08hvcw47xubLdhw0",
+    authDomain: "restracker-c6440.firebaseapp.com",
+    projectId: "restracker-c6440",
+    storageBucket: "restracker-c6440.firebasestorage.app",
+    messagingSenderId: "223599584957",
+    appId: "1:223599584957:web:8b5c7e195d5bf42912f9d4"
+  };
+
+  if (firebaseConfig.apiKey === "REPLACE_ME"){
+    window.VW.showBanner("board-banner", "This site isn't connected to a database yet — add your Firebase config in index.html (see SETUP.md).");
+    window.VW.showBanner("form-banner", "Reporting is disabled until Firebase is configured.");
+    throw new Error("Firebase config not set");
+  }
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+  const sightingsCol = collection(db, "sightings");
+
+  const HALLS = window.VW.HALLS;
+  const HALL_ROOM_TYPES = window.VW.HALL_ROOM_TYPES;
+  const hallColors = window.VW.hallColors;
+
+  const submitBtn = document.getElementById("submit-btn");
+  const statusEl = document.getElementById("form-status");
+  const formEl = document.getElementById("report-form");
+
+  let currentUser = null;
+
+  signInAnonymously(auth).catch(err=>{
+    console.error("Anonymous sign-in failed:", err);
+    if (err.code === "auth/admin-restricted-operation" || err.code === "auth/operation-not-allowed"){
+      window.VW.showBanner("form-banner", "Anonymous sign-in isn't enabled on this Firebase project yet. In the Firebase Console go to Build → Authentication → Sign-in method, and enable \"Anonymous\". See SETUP.md.");
+    } else {
+      window.VW.showBanner("form-banner", "Couldn't connect to the reporting system. Reloading may help.");
+    }
+  });
+
+  onAuthStateChanged(auth, (user)=>{
+    if (user){
+      currentUser = user;
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Submit report";
+    } else {
+      currentUser = null;
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Connecting…";
+    }
+  });
+
+  // ---------- chart residence / room-type selectors ----------
+  const chartHallSelect = document.getElementById("chart-hall-select");
+  const chartRoomTypeSelect = document.getElementById("chart-roomtype-select");
+  HALLS.forEach(h=>{
+    const o = document.createElement("option"); o.value = h; o.textContent = h;
+    chartHallSelect.appendChild(o);
+  });
+  chartHallSelect.value = HALLS[0];
+
+  function populateChartRoomTypes(){
+    const hall = chartHallSelect.value;
+    chartRoomTypeSelect.innerHTML = "";
+    const allOpt = document.createElement("option");
+    allOpt.value = "__all__"; allOpt.textContent = "All room types (this hall)";
+    chartRoomTypeSelect.appendChild(allOpt);
+    (HALL_ROOM_TYPES[hall] || []).forEach(rt=>{
+      const o = document.createElement("option"); o.value = rt; o.textContent = rt;
+      chartRoomTypeSelect.appendChild(o);
+    });
+    chartRoomTypeSelect.value = "__all__";
+  }
+  populateChartRoomTypes();
+  chartHallSelect.addEventListener("change", ()=>{ populateChartRoomTypes(); renderChart(); });
+  chartRoomTypeSelect.addEventListener("change", renderChart);
+
+  // ---------- state ----------
+  let allSightings = [];        // { hall, roomType, beds, note, selectionTime(ms) }
+  let latestByKey = {};         // "hall|||roomType" -> sighting
+  let prevCountByKey = {};
+
+  function keyOf(hall, roomType){ return hall + "|||" + roomType; }
+
+  const board = document.getElementById("board");
+
+  function statusClass(beds){
+    if (beds === null || beds === undefined) return "status-unknown";
+    if (beds <= 0) return "status-gone";
+    if (beds <= 10) return "status-low";
+    return "status-plenty";
+  }
+
+  function timeAgo(ms){
+    const diff = Date.now() - ms;
+    const mins = Math.floor(diff/60000);
+    if (mins < 1) return "just now";
+    if (mins < 60) return mins + "m ago";
+    const hrs = Math.floor(mins/60);
+    if (hrs < 24) return hrs + "h ago";
+    return Math.floor(hrs/24) + "d ago";
+  }
+
+  function renderBoard(){
+    board.innerHTML = "";
+    HALLS.forEach(hall=>{
+      const card = document.createElement("div");
+      card.className = "flap-card";
+      let rowsHtml = "";
+      (HALL_ROOM_TYPES[hall] || []).forEach(rt=>{
+        const key = keyOf(hall, rt);
+        const s = latestByKey[key];
+        const changed = s && prevCountByKey[key] !== undefined && prevCountByKey[key] !== s.beds;
+        const bedsDisplay = s ? s.beds : "—";
+        rowsHtml += `
+          <div class="flap-rt-row ${statusClass(s ? s.beds : null)}">
+            <div class="flap-rt-label">${rt}</div>
+            <div class="flap-rt-count-wrap">
+              <div class="flap-rt-count ${changed ? 'flip' : ''}">${bedsDisplay}</div>
+              <div class="flap-rt-unit">${s ? (s.beds === 1 ? "left" : "left") : "no reports"}</div>
+            </div>
+            <div class="flap-rt-meta">${s ? "seen " + timeAgo(s.selectionTime) : ""}</div>
+          </div>
+        `;
+        if (s) prevCountByKey[key] = s.beds;
+      });
+      card.innerHTML = `<div class="flap-hall">${hall}</div>${rowsHtml}`;
+      board.appendChild(card);
+    });
+  }
+  setInterval(renderBoard, 30000);
+
+  // ---------- chart ----------
+  const ctx = document.getElementById("depletion-chart");
+  let chart = new Chart(ctx, {
+    type: "line",
+    data: { datasets: [] },
+    options: {
+      responsive:true,
+      maintainAspectRatio:false,
+      interaction:{ mode:"nearest", intersect:false },
+      scales:{
+        x:{ type:"time", time:{ unit:"hour" }, grid:{ color:"#2A3F5A" }, ticks:{ color:"#93A6BD" } },
+        y:{ title:{ display:true, text:"Beds/rooms remaining", color:"#93A6BD" }, grid:{ color:"#2A3F5A" }, ticks:{ color:"#93A6BD" }, beginAtZero:true }
+      },
+      plugins:{ legend:{ labels:{ color:"#EDEFF2" } } }
+    }
+  });
+
+  const rtPalette = ["#F5B700","#5B9BD5","#4CAF7D","#E4572E","#B48EAD"];
+
+  function renderChart(){
+    const hall = chartHallSelect.value;
+    const rtSelected = chartRoomTypeSelect.value;
+    const roomTypes = rtSelected === "__all__" ? (HALL_ROOM_TYPES[hall] || []) : [rtSelected];
+
+    const datasets = roomTypes.map((rt, i)=>{
+      const key = keyOf(hall, rt);
+      const points = allSightings
+        .filter(s=> s.hall === hall && s.roomType === rt)
+        .sort((a,b)=> a.selectionTime - b.selectionTime)
+        .map(s=> ({ x: s.selectionTime, y: s.beds }));
+      return {
+        label: rt, data: points,
+        borderColor: rtPalette[i % rtPalette.length],
+        backgroundColor: rtPalette[i % rtPalette.length],
+        tension:0.15, pointRadius:3, borderWidth:2, spanGaps:true
+      };
+    }).filter(ds => ds.data.length > 0);
+
+    chart.data.datasets = datasets;
+    chart.update();
+  }
+
+  // ---------- live sync ----------
+  const q = query(sightingsCol, orderBy("selectionTime","asc"));
+  onSnapshot(q, (snap)=>{
+    allSightings = [];
+    latestByKey = {};
+    snap.forEach(docSnap=>{
+      const d = docSnap.data();
+      const ms = d.selectionTime && d.selectionTime.toMillis ? d.selectionTime.toMillis() : Date.now();
+      const record = { hall:d.hall, roomType:d.roomType, beds:d.beds, note:d.note || "", selectionTime: ms };
+      allSightings.push(record);
+      const key = keyOf(d.hall, d.roomType);
+      if (!latestByKey[key] || latestByKey[key].selectionTime < ms){
+        latestByKey[key] = record;
+      }
+    });
+    renderBoard();
+    renderChart();
+  }, (err)=>{
+    console.error("Firestore read failed:", err);
+    window.VW.showBanner("board-banner", "Couldn't load live data. Check your Firestore security rules and config.");
+  });
+
+  // ---------- submit ----------
+  formEl.addEventListener("submit", async (e)=>{
+    e.preventDefault();
+
+    // Bot check first — fail silently-successful so bots don't learn to route around it.
+    if (window.VW.isLikelyBot()){
+      statusEl.textContent = "Thanks — your report is live on the board.";
+      statusEl.className = "form-status ok";
+      window.VW.resetRows();
+      window.VW.markSubmitted();
+      return;
+    }
+
+    if (!currentUser){
+      statusEl.textContent = "Still connecting — try again in a second.";
+      statusEl.className = "form-status err";
+      return;
+    }
+
+    const rate = window.VW.canSubmitNow();
+    if (!rate.ok){
+      statusEl.textContent = `Please wait ${rate.waitSeconds}s before submitting again.`;
+      statusEl.className = "form-status err";
+      return;
+    }
+
+    const when = window.VW.validateWhen();
+    const { entries, errors: rowErrors } = window.VW.collectRows();
+    const errors = [...when.errors, ...rowErrors];
+
+    // Plausibility check: flag increases with no explanation.
+    entries.forEach(entry=>{
+      const key = keyOf(entry.hall, entry.roomType);
+      const prev = latestByKey[key];
+      if (prev && entry.beds > prev.beds && entry.note.trim() === ""){
+        errors.push(`${entry.hall} — ${entry.roomType}: that's higher than the last report (${prev.beds}). Add a short note explaining why (e.g. "rooms released") to submit this.`);
+      }
+    });
+
+    if (errors.length > 0){
+      statusEl.textContent = errors.join(" ");
+      statusEl.className = "form-status err";
+      return;
+    }
+
+    submitBtn.disabled = true;
+    statusEl.textContent = "Submitting…";
+    statusEl.className = "form-status";
+
+    try{
+      const batch = writeBatch(db);
+      const batchId = (crypto.randomUUID ? crypto.randomUUID() : (Date.now() + "-" + Math.random().toString(16).slice(2)));
+      const selectionTimestamp = Timestamp.fromMillis(when.selectionTimeMs);
+      const rateLimitRef = doc(db, "rateLimits", currentUser.uid);
+
+      entries.forEach(entry=>{
+        const ref = doc(sightingsCol);
+        batch.set(ref, {
+          hall: entry.hall,
+          roomType: entry.roomType,
+          beds: entry.beds,
+          note: entry.note,
+          selectionTime: selectionTimestamp,
+          submittedAt: serverTimestamp(),
+          batchId,
+          reporterId: currentUser.uid
+        });
+      });
+      batch.set(rateLimitRef, { lastWrite: serverTimestamp() }, { merge: true });
+
+      await batch.commit();
+      statusEl.textContent = `Thanks — ${entries.length} entr${entries.length>1?"ies":"y"} added to the board.`;
+      statusEl.className = "form-status ok";
+      window.VW.resetRows();
+      window.VW.markSubmitted();
+    }catch(err){
+      console.error(err);
+      if (err.code === "permission-denied"){
+        statusEl.textContent = "Submission blocked by the server — you may be submitting too quickly, or a value is out of range. Wait a bit and try again.";
+      } else {
+        statusEl.textContent = "Something went wrong submitting. Try again.";
+      }
+      statusEl.className = "form-status err";
+    }finally{
+      submitBtn.disabled = false;
+    }
+  });
+
+} catch (err) {
+  console.error("Vacancy Watch: Firebase module failed to load.", err);
+  if (window.VW && window.VW.showBanner){
+    const el = document.getElementById("board-banner");
+    if (!el.classList.contains("show")){
+      window.VW.showBanner("board-banner", "Live data isn't connected — open this page from a real web address (not by double-clicking the file), and make sure Firebase is configured. See SETUP.md.");
+    }
+  }
+}
+</script>
+</body>
+</html>
